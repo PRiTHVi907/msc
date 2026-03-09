@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #0A2540;
+  --color-navy-light: #113B5E;
+  --color-navy-lighter: #1D5A85;
+  --color-green-cta: #00D26A;
+  --color-green-cta-hover: #00A352;
+  --color-bg-neutral: #F4F5F7;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #8792A2;
+  --font-sans: "Inter", "Roboto", sans-serif;
+}
+
+@layer utilities {
+  .focus-ring {
+    @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-green-cta)];
+  }
+}
+
+body {
+  @apply bg-[var(--color-bg-neutral)] text-[var(--color-text-primary)] font-sans antialiased;
+}

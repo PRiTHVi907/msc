@@ -1,0 +1,12 @@
+WS Hit Endpoint
+Accepting websocket
+Websocket accepted
+Received M1: {'type': 'authenticate', 'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTExMTExMTEtMTExMS0xMTExLTExMTEtMTExMTExMTExMTExIiwicm9sZSI6ImNhbmRpZGF0ZSJ9.A6iM5CdTG9njrn7VIlnL1DRGWep_tAvFV9ukuyoMgow'}
+JWT Verified
+DEBUG INCOMING INTERVIEW ID: 15cb163814774572a7e31e3ab6ac2983
+DEBUG UUID PARSED: 15cb1638-1477-4572-a7e3-1e3ab6ac2983
+DEBUG DB RESULT: 15cb1638-1477-4572-a7e3-1e3ab6ac2983
+Received M2: {'type': 'start_stream', 'sample_rate': 16000}
+Calling ai_svc.run
+Mock Ingress Started
+Mock Egress Started

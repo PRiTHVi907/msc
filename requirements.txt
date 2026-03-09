@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+sqlalchemy
+asyncpg
+twilio
+google-genai
+boto3
+PyJWT
