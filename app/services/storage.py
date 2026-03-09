@@ -7,6 +7,7 @@ class StorageService:
         self.sts = boto3.client("sts", aws_access_key_id=settings.AWS_ACCESS_KEY_ID, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, region_name=settings.AWS_REGION)
 
     async def generate_presigned_upload_url(self, interview_id: str, file_name: str, content_type: str) -> dict:
+        """Generate presigned POST URL for S3 with 900-second (15-minute) expiration."""
         def _sync_gen() -> dict:
             cred = self.sts.assume_role(RoleArn=settings.AWS_ROLE_ARN, RoleSessionName=f"UploadSession_{interview_id}")["Credentials"]
             s3 = boto3.client("s3", aws_access_key_id=cred["AccessKeyId"], aws_secret_access_key=cred["SecretAccessKey"], aws_session_token=cred["SessionToken"], region_name=settings.AWS_REGION)

@@ -1,69 +1,81 @@
-import { useState, useRef, useCallback } from 'react';
-import { getPresignedUrl, uploadVideoChunk } from '../services/uploadService';
+import { useRef, useCallback } from 'react';
 
-export function useMediaRecorder(interviewId: string) {
-  const [isRecording, setIsRecording] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  
-  const mediaRecorder = useRef<MediaRecorder | null>(null);
-  const chunkIndex = useRef(0);
-  const totalChunks = useRef(0);
-  const uploadedChunks = useRef(0);
+const MIME = 'video/webm;codecs=vp9,opus';
 
-  const startStream = useCallback(async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      setStream(s);
-      return s;
-    } catch (e) { console.error('Device access denied', e); throw e; }
+/**
+ * Records the local MediaStream as a single WebM blob using MediaRecorder.
+ * On stop, PUTs the complete blob to a presigned S3 URL.
+ */
+export function useMediaRecorder(interviewId: string, jwtToken: string) {
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const startRecording = useCallback((stream: MediaStream) => {
+    chunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported(MIME) ? MIME : 'video/webm';
+    const mr = new MediaRecorder(stream, { mimeType });
+
+    mr.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+
+    mr.start(250); // collect chunks every 250ms for smooth data flow
+    recorderRef.current = mr;
   }, []);
 
-  const stopStream = useCallback(() => {
-    stream?.getTracks().forEach(t => t.stop());
-    setStream(null);
-  }, [stream]);
+  const stopRecording = useCallback((): Promise<void> => {
+    return new Promise((resolve) => {
+      const mr = recorderRef.current;
+      if (!mr || mr.state === 'inactive') { resolve(); return; }
 
-  const startRecording = useCallback(() => {
-    if (!stream) return;
-    chunkIndex.current = 0;
-    totalChunks.current = 0;
-    uploadedChunks.current = 0;
-    setUploadProgress(0);
-    
-    const mr = new MediaRecorder(stream, { mimeType: 'video/webm' });
-    mr.ondataavailable = async (e) => {
-      if (e.data.size > 0) {
-        const idx = chunkIndex.current++;
-        totalChunks.current++;
+      mr.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType });
+        chunksRef.current = [];
+
         try {
-          const url = await getPresignedUrl(interviewId, idx, e.data.type);
-          
-          if (url.includes('mock-upload')) {
-             // Skip actual fetch if it is a mock development URL
-             uploadedChunks.current++;
-             setUploadProgress(Math.round((uploadedChunks.current / totalChunks.current) * 100));
-          } else {
-             await uploadVideoChunk(e.data, url);
-             uploadedChunks.current++;
-             setUploadProgress(Math.round((uploadedChunks.current / totalChunks.current) * 100));
+          // 1. Get presigned PUT URL from backend
+          const urlRes = await fetch(`/api/v1/interviews/${interviewId}/video-upload-url`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${jwtToken}`,
+            },
+            body: JSON.stringify({ filename: 'recording.webm', content_type: mr.mimeType }),
+          });
+
+          if (!urlRes.ok) throw new Error('Failed to get presigned URL');
+          const { upload_url, resource_url } = await urlRes.json();
+
+          // 2. PUT blob to S3 (skip if mock URL)
+          if (!upload_url.includes('mock-upload')) {
+            const putRes = await fetch(upload_url, {
+              method: 'PUT',
+              headers: { 'Content-Type': mr.mimeType },
+              body: blob,
+            });
+            if (!putRes.ok) throw new Error(`S3 PUT failed: ${putRes.statusText}`);
           }
-          
-        } catch (err) { console.error('Background upload failed for chunk', idx, err); }
-      }
-    };
-    
-    mr.start(3000); // chunk every 3s
-    mediaRecorder.current = mr;
-    setIsRecording(true);
-  }, [stream, interviewId]);
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorder.current && isRecording) {
-      mediaRecorder.current.stop();
-      setIsRecording(false);
-    }
-  }, [isRecording]);
+          // 3. Notify backend to finalize the interview record
+          await fetch(`/api/v1/interviews/${interviewId}/finalize-video`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${jwtToken}`,
+            },
+            body: JSON.stringify({ s3_resource_url: resource_url || upload_url }),
+          });
+        } catch (err) {
+          console.error('[MediaRecorder] Upload/finalize failed:', err);
+        } finally {
+          resolve();
+        }
+      };
 
-  return { stream, isRecording, uploadProgress, startStream, stopStream, startRecording, stopRecording };
+      mr.stop();
+      recorderRef.current = null;
+    });
+  }, [interviewId, jwtToken]);
+
+  return { startRecording, stopRecording };
 }

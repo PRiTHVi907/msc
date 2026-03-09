@@ -1,14 +1,18 @@
+import asyncio
+import uuid as _uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 from sqlalchemy import func
+from twilio.base.exceptions import TwilioRestException
 from app.core.database import get_db
 from app.models.models import Interview, InterviewStatus
 from app.schemas.schemas import JoinResponse, VideoUploadRequest, VideoFinalizeRequest
 from app.services.twilio import twilio_service
 from app.services.storage import storage_service
+from app.services.scoring import calculate_ai_score
 from app.core.auth import verify_jwt
 from app.core.limiter import join_limiter
 
@@ -45,14 +49,16 @@ async def join_interview(interview_id: UUID, db: AsyncSession = Depends(get_db),
         if not interview or interview.status in (InterviewStatus.completed, InterviewStatus.failed):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid interview")
         room_name = f"room_{interview_id}"
-        
-        from app.core.config import settings
-        if settings.TWILIO_ACCOUNT_SID == "dummy":
-            token = "mock_token"
-        else:
-            interview.twilio_room_sid = await twilio_service.create_video_room(str(interview_id))
+        try:
+            if not interview.twilio_room_sid:
+                interview.twilio_room_sid = await twilio_service.create_video_room(str(interview_id))
             token = twilio_service.generate_client_token(room_name, str(interview.user_id))
-            
+        except TwilioRestException as e:
+            print(f"[TWILIO API ERROR] Status: {e.status} | Code: {e.code} | Message: {e.msg}")
+            raise HTTPException(status_code=502, detail=e.msg)
+        except Exception as e:
+            print(f"[BACKEND CRASH] Unexpected error during provisioning: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal provisioning error")
         interview.status = InterviewStatus.in_progress
         await db.commit()
         return JoinResponse(token=token, room_name=room_name, interview_id=interview_id)
@@ -76,8 +82,9 @@ async def get_upload_url(interview_id: UUID, req: VideoUploadRequest, db: AsyncS
 async def finalize_video(interview_id: UUID, req: VideoFinalizeRequest, db: AsyncSession = Depends(get_db), _: str = Depends(verify_jwt)):
     i = (await db.execute(select(Interview).where(Interview.id == interview_id))).scalar_one_or_none()
     if not i: raise HTTPException(status_code=404, detail="Not found")
-    i.status = InterviewStatus.completed
     i.ended_at = func.now()
     i.s3_video_url = req.s3_resource_url
     await db.commit()
+    # Fire scoring asynchronously — does not block the HTTP response
+    asyncio.create_task(calculate_ai_score(interview_id))
     return {"status": "ok"}

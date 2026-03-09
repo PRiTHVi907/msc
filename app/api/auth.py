@@ -1,56 +1,62 @@
-import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from passlib.context import CryptContext
 from app.core.database import get_db
-from app.models.models import User, Interview, InterviewStatus
-from app.core.config import settings
+from app.core.auth import create_jwt
+from app.models.models import User
 
 router = APIRouter(prefix="/api/v1/auth")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
-    role: str
 
-@router.post("/login")
-async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
-    # Simplified login logic: Check if user exists, else create for demo purposes
-    user = (await db.execute(select(User).where(User.email == req.email))).scalar_one_or_none()
-    
-    if not user:
-        # Create a new user if they don't exist for the demo
-        user = User(email=req.email, full_name=req.email.split('@')[0])
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
 
-    # In a real app, verify password hash here. For demo, we skip.
+class AuthResponse(BaseModel):
+    token: str
+    user_id: str
+    email: str
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
+
+@router.post("/register", response_model=AuthResponse)
+async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    existing = (await db.execute(select(User).where(User.email == req.email))).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="Email already registered")
     
-    # Sign JWT securely
-    token = jwt.encode(
-        {"user_id": str(user.id), "role": req.role}, 
-        settings.JWT_SECRET_KEY, 
-        algorithm="HS256"
+    user = User(
+        email=req.email,
+        full_name=req.full_name,
+        password_hash=hash_password(req.password),
+        is_active=True
     )
-
-    interview_id = None
-    if req.role == "candidate":
-        # Check if they have a pending interview, if not create one for the demo
-        pending_interview = (await db.execute(
-            select(Interview).where(
-                Interview.user_id == user.id, 
-                Interview.status == InterviewStatus.scheduled
-            )
-        )).scalar_one_or_none()
-
-        if not pending_interview:
-            pending_interview = Interview(user_id=user.id, status=InterviewStatus.scheduled)
-            db.add(pending_interview)
-            await db.commit()
-            await db.refresh(pending_interview)
-        
-        interview_id = str(pending_interview.id)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
     
-    return {"token": token, "role": req.role, "user_id": str(user.id), "interview_id": interview_id}
+    token = create_jwt(str(user.id))
+    return AuthResponse(token=token, user_id=str(user.id), email=user.email)
+
+@router.post("/login", response_model=AuthResponse)
+async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
+    user = (await db.execute(select(User).where(User.email == req.email))).scalar_one_or_none()
+    if not user or not verify_password(req.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account inactive")
+    
+    token = create_jwt(str(user.id))
+    return AuthResponse(token=token, user_id=str(user.id), email=user.email)

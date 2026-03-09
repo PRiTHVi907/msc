@@ -20,6 +20,7 @@ class User(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4, index=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     full_name: Mapped[str] = mapped_column(String)
+    password_hash: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 

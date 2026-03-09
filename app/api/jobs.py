@@ -5,32 +5,17 @@ from uuid import UUID
 from app.core.database import get_db
 from app.models.models import Job
 from app.core.auth import verify_jwt
-from pydantic import BaseModel
+from app.schemas.schemas import JobCreateRequest, JobCreateResponse, JobListItem
 
 router = APIRouter(prefix="/api/v1/jobs")
 
-class QuestionSchema(BaseModel):
-    id: str
-    text: str
-    allowFollowup: bool
-
-class NotificationsSchema(BaseModel):
-    email: bool
-    sms: bool
-    wa: bool
-
-class JobCreateSchema(BaseModel):
-    title: str
-    dept: str
-    skills: str
-    type: str # 'async' or 'live'
-    minScore: int
-    qs: list[QuestionSchema]
-    notifs: NotificationsSchema
-
-@router.post("")
-async def create_job(job_data: JobCreateSchema, db: AsyncSession = Depends(get_db)):
-    # Mocking verify_jwt for now or assuming the frontend sends auth headers properly.
+@router.post("", response_model=JobCreateResponse)
+async def create_job(
+    job_data: JobCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    _: str = Depends(verify_jwt)  # Admin role check (mocked for now)
+) -> JobCreateResponse:
+    """Create a new job posting. Requires authentication."""
     new_job = Job(
         title=job_data.title,
         department=job_data.dept,
@@ -43,9 +28,18 @@ async def create_job(job_data: JobCreateSchema, db: AsyncSession = Depends(get_d
     db.add(new_job)
     await db.commit()
     await db.refresh(new_job)
-    return {"status": "success", "job_id": str(new_job.id)}
+    return JobCreateResponse(status="success", job_id=str(new_job.id))
 
-@router.get("")
-async def get_jobs(db: AsyncSession = Depends(get_db)):
+@router.get("", response_model=list[JobListItem])
+async def list_jobs(db: AsyncSession = Depends(get_db)) -> list[JobListItem]:
+    """List all available job postings."""
     jobs = (await db.execute(select(Job))).scalars().all()
-    return [{"id": str(j.id), "title": j.title, "department": j.department, "type": j.interview_type} for j in jobs]
+    return [
+        JobListItem(
+            id=str(j.id),
+            title=j.title,
+            department=j.department,
+            type=j.interview_type
+        )
+        for j in jobs
+    ]

@@ -97,16 +97,10 @@ export function useMicrophoneStream(ws: WebSocket | null) {
         // Discard empty buffers to save bandwidth
         if (base64Data.length === 0) return;
 
-        // Structured payload specifically configured for Gemini / Backend Ingress
+        // Standard WebSocket audio message format
         const payload = {
-          realtime_input: {
-            media_chunks: [
-              {
-                mime_type: "audio/pcm;rate=16000",
-                data: base64Data
-              }
-            ]
-          }
+          type: "audio",
+          data: base64Data
         };
 
         ws.send(JSON.stringify(payload));

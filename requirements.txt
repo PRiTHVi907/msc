@@ -7,3 +7,6 @@ twilio
 google-genai
 boto3
 PyJWT
+passlib[bcrypt]
+email-validator
+python-multipart
