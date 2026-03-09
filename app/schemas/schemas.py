@@ -9,6 +9,7 @@ from typing import Optional
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    role: str = "candidate"  # Optional role field from frontend
 
 class RegisterRequest(BaseModel):
     email: EmailStr

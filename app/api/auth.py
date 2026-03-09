@@ -13,6 +13,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    role: str = "candidate"  # Optional role field from frontend
 
 class RegisterRequest(BaseModel):
     email: EmailStr
