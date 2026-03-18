@@ -18,7 +18,7 @@ export function CalendarIntegration() {
       <div className="text-center mb-8">
         <div className="inline-flex bg-[#0A2540]/10 p-3 rounded-full text-[#0A2540] mb-4"><CalIcon size={32} /></div>
         <h2 className="text-2xl font-bold text-[#0A2540]">Schedule Live AI Interview</h2>
-        <p className="text-[#8792A2] mt-2">Select a time that works best for you. The AI recruiter will connect with you via Twilio.</p>
+        <p className="text-[#8792A2] mt-2">Select a time that works best for you. The AI recruiter will connect with you via Retell AI.</p>
       </div>
 
       <div className="mb-6 flex items-center bg-gray-50 p-3 rounded-lg border">

@@ -10,10 +10,7 @@ interface AuthSlice {
 }
 
 interface InterviewSession {
-  videoToken: string | null
-  roomName: string | null
   interviewId: string | null
-  sampleRate: number
 }
 
 interface AppStore extends AuthSlice {
@@ -34,7 +31,7 @@ export const useAppStore = create<AppStore>()(
       token: null,
       currentUser: null,
       login: (token, user) => set({ token, currentUser: user }),
-      logout: () => set({ token: null, currentUser: null, interviews: [], selectedInterview: null, interviewSession: { videoToken: null, roomName: null, interviewId: null, sampleRate: 16000 } }),
+      logout: () => set({ token: null, currentUser: null, interviews: [], selectedInterview: null, interviewSession: { interviewId: null } }),
       isAuthenticated: () => !!get().token,
 
       // Interviews
@@ -51,10 +48,7 @@ export const useAppStore = create<AppStore>()(
 
       // Interview Session
       interviewSession: {
-        videoToken: null,
-        roomName: null,
-        interviewId: null,
-        sampleRate: 16000
+        interviewId: null
       },
       setInterviewSession: (session) => set(state => ({
         interviewSession: { ...state.interviewSession, ...session }

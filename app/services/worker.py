@@ -1,9 +1,8 @@
 import asyncio
-from datetime import datetime, timedelta
-from sqlalchemy import insert, select
+from sqlalchemy import insert
 from sqlalchemy.exc import DBAPIError
 from app.core.database import AsyncSessionLocal
-from app.models.models import Transcript, Interview, InterviewStatus
+from app.models.models import Transcript
 
 
 class TranscriptWorker:
@@ -52,30 +51,3 @@ class TranscriptWorker:
 transcript_worker = TranscriptWorker()
 
 
-async def cleanup_orphans(db_factory=AsyncSessionLocal):
-    """
-    Every 15 minutes: find interviews stuck in_progress for >2 hours,
-    force-complete the Twilio room, and mark them as failed.
-    """
-    while True:
-        await asyncio.sleep(15 * 60)          # 15-minute cadence
-        threshold = datetime.utcnow() - timedelta(hours=2)
-        try:
-            from app.services.twilio import twilio_service
-            async with db_factory() as db:
-                res = await db.execute(
-                    select(Interview).where(
-                        Interview.status == InterviewStatus.in_progress,
-                        Interview.started_at < threshold,
-                    )
-                )
-                for interview in res.scalars():
-                    if interview.twilio_room_sid:
-                        try:
-                            await twilio_service.complete_video_room(interview.twilio_room_sid)
-                        except Exception:
-                            pass
-                    interview.status = InterviewStatus.failed
-                await db.commit()
-        except Exception:
-            pass

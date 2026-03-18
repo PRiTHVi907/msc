@@ -2,18 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from passlib.context import CryptContext
+import bcrypt
 from app.core.database import get_db
 from app.core.auth import create_jwt
 from app.models.models import User
 
 router = APIRouter(prefix="/api/v1/auth")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-    role: str = "candidate"  # Optional role field from frontend
+    role: str = "candidate"
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -24,12 +23,15 @@ class AuthResponse(BaseModel):
     token: str
     user_id: str
     email: str
+    interview_id: str | None = None
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    # bcrypt.hashpw expects bytes
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
 
 @router.post("/register", response_model=AuthResponse)
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
@@ -59,5 +61,8 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account inactive")
     
+    from app.models.models import Interview
+    interview = (await db.execute(select(Interview).where(Interview.user_id == user.id))).scalars().first()
+    
     token = create_jwt(str(user.id))
-    return AuthResponse(token=token, user_id=str(user.id), email=user.email)
+    return AuthResponse(token=token, user_id=str(user.id), email=user.email, interview_id=str(interview.id) if interview else None)

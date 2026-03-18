@@ -7,7 +7,7 @@ export function Dashboard() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   
   useEffect(() => {
-    fetch('http://localhost:8000/api/v1/interviews')
+    fetch('/api/v1/interviews')
       .then(res => res.json())
       .then(data => setCandidates(data))
       .catch(err => console.error("Failed to load interviews", err));

@@ -26,19 +26,10 @@ class AuthResponse(BaseModel):
 # ============================================================================
 
 class JoinResponse(BaseModel):
-    """Response after joining an interview (provisioning complete)."""
-    token: str
-    room_name: str
+    """Response after joining an interview (provisioning with Retell complete)."""
+    access_token: str
+    retell_call_id: str
     interview_id: UUID
-
-class VideoUploadRequest(BaseModel):
-    """Request for S3 presigned upload URL."""
-    filename: str
-    content_type: str
-
-class VideoFinalizeRequest(BaseModel):
-    """Request to finalize video after upload."""
-    s3_resource_url: str
 
 class InterviewListResponse(BaseModel):
     """Interview list item."""

@@ -40,11 +40,10 @@ class Interview(Base):
     __tablename__ = "interviews"
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    twilio_room_sid: Mapped[str | None] = mapped_column(String, unique=True)
+    retell_call_id: Mapped[str | None] = mapped_column(String, unique=True)
     status: Mapped[InterviewStatus] = mapped_column(Enum(InterviewStatus), default=InterviewStatus.scheduled)
     started_at: Mapped[datetime | None] = mapped_column(DateTime)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime)
-    s3_video_url: Mapped[str | None] = mapped_column(String)
     job_id: Mapped[UUID | None] = mapped_column(ForeignKey("jobs.id"), index=True)
     ai_score: Mapped[float | None] = mapped_column(Float)
 

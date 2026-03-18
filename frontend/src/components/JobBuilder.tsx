@@ -18,7 +18,7 @@ export function JobBuilder() {
 
   const saveConfiguration = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/jobs', {
+      const res = await fetch('/api/v1/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
@@ -56,7 +56,7 @@ export function JobBuilder() {
             {(['async', 'live'] as const).map(t => (
               <button key={t} onClick={() => setForm({...form, type: t})} className={`flex-1 p-4 border rounded-xl focus-ring transition-transform hover:scale-[1.02] ${form.type === t ? 'border-[#1D5A85] bg-[#1D5A85]/5 ring-1 ring-[#1D5A85]' : 'border-gray-200 hover:bg-gray-50'}`}>
                 <h3 className="font-semibold text-[#0A2540] capitalize">{t} Video</h3>
-                <p className="text-sm text-[#8792A2] mt-1">{t === 'async' ? 'Candidate records answers alone.' : 'Real-time Twilio + Gemini AI conversation.'}</p>
+                <p className="text-sm text-[#8792A2] mt-1">{t === 'async' ? 'Candidate records answers alone.' : 'Real-time Retell AI conversation.'}</p>
               </button>
             ))}
           </div>

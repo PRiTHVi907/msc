@@ -9,14 +9,12 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRY_HOURS: int = 24
     
-    # Twilio
-    TWILIO_ACCOUNT_SID: str
-    TWILIO_AUTH_TOKEN: str
-    TWILIO_API_KEY: str
-    TWILIO_API_SECRET: str
-    
     # Gemini
     GEMINI_API_KEY: str
+    
+    # Retell AI
+    RETELL_API_KEY: str
+    RETELL_AGENT_ID: str
     
     # AWS
     AWS_ACCESS_KEY_ID: str

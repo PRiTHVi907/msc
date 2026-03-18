@@ -7,21 +7,72 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'candidate' | 'reviewer'>('admin');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { setAuth } = useAppStore();
+  const { login } = useAppStore();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
+    // #region agent log
+    fetch('http://127.0.0.1:7787/ingest/b72f1e5d-a006-424c-839f-e5f53559e1bf', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': '705855',
+      },
+      body: JSON.stringify({
+        sessionId: '705855',
+        runId: 'initial',
+        hypothesisId: 'H1',
+        location: 'Login.tsx:handleLogin:start',
+        message: 'handleLogin invoked',
+        data: { role },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     try {
-      const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+      const res = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role })
       });
-      if (!res.ok) throw new Error('Login failed');
+      // #region agent log
+      fetch('http://127.0.0.1:7787/ingest/b72f1e5d-a006-424c-839f-e5f53559e1bf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': '705855',
+        },
+        body: JSON.stringify({
+          sessionId: '705855',
+          runId: 'initial',
+          hypothesisId: 'H2',
+          location: 'Login.tsx:handleLogin:response',
+          message: 'Login response received',
+          data: { status: res.status, ok: res.ok },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      if (!res.ok) {
+        let message = 'Login failed. Please check your credentials.';
+        try {
+          const errorBody = await res.json();
+          if (errorBody?.detail || errorBody?.message) {
+            message = errorBody.detail || errorBody.message;
+          }
+        } catch {
+          // ignore JSON parse errors and fall back to default message
+        }
+        throw new Error(message);
+      }
       
       const data = await res.json();
-      setAuth(role, data.token);
+      login(data.token, { user_id: data.user_id || 'unknown', email });
       
       if (role === 'admin' || role === 'reviewer') {
         navigate('/admin');
@@ -29,12 +80,59 @@ export default function Login() {
         if (data.interview_id) {
           navigate(`/interview/${data.interview_id}`);
         } else {
-          alert("Error: No interview ID found for this candidate.");
+          setError("Error: No interview ID found for this candidate.");
+          // #region agent log
+          fetch('http://127.0.0.1:7787/ingest/b72f1e5d-a006-424c-839f-e5f53559e1bf', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Debug-Session-Id': '705855',
+            },
+            body: JSON.stringify({
+              sessionId: '705855',
+              runId: 'initial',
+              hypothesisId: 'H3',
+              location: 'Login.tsx:handleLogin:noInterviewId',
+              message: 'Candidate login missing interview_id',
+              data: {},
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
         }
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to login. Ensure backend is running.");
+      // #region agent log
+      fetch('http://127.0.0.1:7787/ingest/b72f1e5d-a006-424c-839f-e5f53559e1bf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': '705855',
+        },
+        body: JSON.stringify({
+          sessionId: '705855',
+          runId: 'initial',
+          hypothesisId: 'H4',
+          location: 'Login.tsx:handleLogin:catch',
+          message: 'Error during login',
+          data: {
+            isTypeError: err instanceof TypeError,
+            name: err instanceof Error ? err.name : 'Unknown',
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      if (err instanceof TypeError) {
+        setError("Cannot reach the server at http://localhost:8000. Please ensure the backend is running.");
+      } else if (err instanceof Error) {
+        setError(err.message || "Failed to login. Please try again.");
+      } else {
+        setError("Failed to login. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,6 +167,12 @@ export default function Login() {
           
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
           <p className="text-gray-500 mb-8">Please enter your details to sign in.</p>
+
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
@@ -146,10 +250,11 @@ export default function Login() {
 
             <button
               type="submit"
+              disabled={loading}
               className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
-              Sign in
-              <ArrowRight className="w-4 h-4" />
+              {loading ? 'Signing in...' : 'Sign in'}
+              {!loading && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
         </div>
