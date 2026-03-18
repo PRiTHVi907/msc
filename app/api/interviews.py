@@ -65,19 +65,19 @@ async def join_interview(interview_id: UUID, db: AsyncSession = Depends(get_db),
         
         try:
             from app.services.retell_service import retell_service
-            access_token = "rejoin_token_unavailable"
-            if not interview.retell_call_id:
-                call_info = retell_service.create_web_call(
-                    interview_id=str(interview_id),
-                    candidate_name=candidate_name,
-                    job_title=job_title,
-                    required_skills=required_skills
-                )
-                interview.retell_call_id = call_info["call_id"]
-                access_token = call_info["access_token"]
+            print(f"[JOIN] Creating fresh Retell call for interview {interview_id}...")
+            call_info = retell_service.create_web_call(
+                interview_id=str(interview_id),
+                candidate_name=candidate_name,
+                job_title=job_title,
+                required_skills=required_skills
+            )
+            interview.retell_call_id = call_info["call_id"]
+            access_token = call_info["access_token"]
+            print(f"[JOIN] Got access_token: {access_token[:20]}... call_id: {interview.retell_call_id}")
         except Exception as e:
             print(f"[RETELL API ERROR] Unexpected error during provisioning: {str(e)}")
-            raise HTTPException(status_code=500, detail="Internal provisioning error")
+            raise HTTPException(status_code=500, detail=f"Internal provisioning error: {str(e)}")
             
         interview.status = InterviewStatus.in_progress
         await db.commit()

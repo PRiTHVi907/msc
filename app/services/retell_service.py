@@ -14,14 +14,13 @@ class RetellService:
         }
         
         try:
-            call = self.client.call.create( # 'create' instead of 'register' in recent SDK possibly, or catch all
+            print("[RETELL SERVICE] Attempting to create Retell WebCall...")
+            call = self.client.call.create_web_call(
                 agent_id=settings.RETELL_AGENT_ID,
-                audio_websocket_protocol="web",
-                audio_encoding="s16le",
-                sample_rate=24000,
                 retell_llm_dynamic_variables=dynamic_variables,
                 metadata={"interview_id": interview_id}
             )
+            print(f"[RETELL SERVICE] SUCCESS: Call ID {call.call_id} generated!")
             return {
                 "access_token": call.access_token,
                 "call_id": call.call_id

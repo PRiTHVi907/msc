@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRY_HOURS: int = 24
     
-    # Gemini
-    GEMINI_API_KEY: str
+    # OpenAI
+    OPENAI_API_KEY: str
     
     # Retell AI
     RETELL_API_KEY: str

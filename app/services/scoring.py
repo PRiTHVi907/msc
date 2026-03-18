@@ -1,10 +1,11 @@
 import asyncio
-from google import genai
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.models.models import Interview, Transcript, InterviewStatus
+from app.core.llm import client as openai_client
 
 _SCORING_RUBRIC = """
 You are a senior technical hiring manager. You have just reviewed a full interview transcript.
@@ -15,15 +16,18 @@ Evaluate the candidate's performance on a scale of 0-100 using this rubric:
 - Communication Clarity (20 pts): Are answers clear, concise, and well-structured?
 - Proactivity & Leadership Signals (15 pts): Does the candidate demonstrate ownership, initiative, or mentorship?
 
-Return ONLY a single integer between 0 and 100. No explanation. No punctuation. Just the number.
+Based on your evaluation, provide the overall score, whether you recommend them to proceed, and point out skill gaps and a brief executive summary.
 """
 
-_MODEL = "gemini-2.5-pro-preview-03-25"
-
+class InterviewEvaluationSchema(BaseModel):
+    overall_score: int
+    is_recommended: bool
+    skill_gaps: list[str]
+    executive_summary: str
 
 async def calculate_ai_score(interview_id, db: AsyncSession | None = None) -> int | None:
     """
-    Fetch all transcripts for the given interview, call Gemini to score them,
+    Fetch all transcripts for the given interview, call OpenAI to score them using structured outputs,
     persist the score to the Interview record, and return the integer score.
     Returns None if not enough transcript data exists.
     """
@@ -44,19 +48,22 @@ async def calculate_ai_score(interview_id, db: AsyncSession | None = None) -> in
         transcript_text = "\n".join(
             f"[{r.speaker.upper()}]: {r.text_content}" for r in rows
         )
+        
         prompt = f"{_SCORING_RUBRIC}\n\n--- INTERVIEW TRANSCRIPT ---\n{transcript_text}"
 
-        if settings.GEMINI_API_KEY == "dummy":
-            score = 72  # deterministic mock score
-        else:
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            response = await asyncio.to_thread(
-                client.models.generate_content,
-                model=_MODEL,
-                contents=prompt,
-            )
-            raw = response.text.strip()
-            score = max(0, min(100, int(raw)))
+        response = await openai_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are an expert technical evaluator parsing interview transcripts. Output ONLY valid JSON matching the requested schema. No markdown wrapping."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        
+        import json
+        parsed_dict = json.loads(response.choices[0].message.content)
+        parsed = InterviewEvaluationSchema(**parsed_dict)
+        score = parsed.overall_score
 
         interview = (await db.execute(
             select(Interview).where(Interview.id == interview_id)
@@ -69,9 +76,8 @@ async def calculate_ai_score(interview_id, db: AsyncSession | None = None) -> in
 
         return score
 
-    except (ValueError, AttributeError):
-        return None           # Gemini returned non-integer
-    except Exception:
+    except Exception as e:
+        print(f"Scoring error: {e}")
         if own_session:
             await db.rollback()
         return None
