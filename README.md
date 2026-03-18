@@ -1,30 +1,61 @@
-# AI Interview Platform Backend
+# AI.nterview Backend - Real-Time Voice Recruiter
 
-A real-time, asynchronous FastAPI backend designed to orchestrate low-latency AI engineering interviews using the **Gemini Multimodal Live API**, **Twilio Programmable Video**, and **AWS S3** for persistent storage.
+A high-performance, asynchronous FastAPI backend designed to power autonomous voice-based engineering interviews. This platform leverages **Retell AI** for voice orchestration, **Groq/Llama-3** for ultra-low latency intelligence, and **SQLAlchemy** for persistent state management.
 
-## Features
-- **Phase 1:** Asynchronous PostgreSQL (asyncpg/SQLAlchemy) configuration and Twilio room provisioning.
-- **Phase 2:** Sub-500ms bidirectional PCM audio WebSockets directly piping human speech to the Gemini Live API.
-- **Phase 3:** Non-blocking background workers draining the AI transcript queue, alongside boto3 AWS S3 pre-signed URL generation for video records.
-- **Phase 4:** Production hardening with custom in-memory token-bucket rate limiters, JWT Bearer verification, and graceful shutdown hooks for orphan Twilio room cleanup.
+## 🚀 Key Features
 
-## Setup
+*   **Real-Time Voice Conversational AI:** Low-latency bidirectional speech processing via Retell AI WebSockets.
+*   **Elite Recruiter Personas:** Dynamic prompt engineering grounded in specific candidate CVs (e.g., Alex Mercer - Head of Marketing).
+*   **Structured AI Scoring:** Automated post-interview evaluation pipeline using LLM-based rubric analysis (0-100 score).
+*   **Asynchronous Orchestration:** Non-blocking FastAPI routers handling auth, job management, and webhook integration.
+*   **Security First:** JWT Bearer authentication, rate limiting, and encrypted environment configuration.
 
-1. Copy the `.env.example` file to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-2. Populate the `.env` file with your **confidential** keys. Do **NOT** commit `.env` into version control.
+## 🛠️ Tech Stack
 
-### Required Confidential Keys:
-- `DATABASE_URL`: Your asyncpg Postgres URL string.
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_API_KEY`, `TWILIO_API_SECRET`: Twilio console credentials.
-- `JWT_SECRET_KEY`: A strong, randomly generated string used to sign your authorization tokens.
-- `GEMINI_API_KEY`: Your private Google Gemini Multi-Modal Live API token.
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ROLE_ARN`: AWS IAM tokens with permission to `s3:PutObject`.
+*   **Backend:** FastAPI (Python 3.10+)
+*   **Voice Engine:** Retell AI SDK
+*   **Intelligence:** Groq (Llama-3.3-70b) / OpenAI SDK
+*   **Database:** SQLite (Development) / PostgreSQL (Production) with SQLAlchemy/asyncpg
+*   **Auth:** JWT (Jose) + bcrypt
 
-3. Install requirements and run the backend via Uvicorn:
-   ```bash
-   pip install -r requirements.txt
-   uvicorn main:app --reload
-   ```
+## ⚙️ Setup & Installation
+
+### 1. Prerequisite Accounts
+*   **Retell AI:** Get an API Key and create an Agent.
+*   **Groq Cloud:** (Optional, for 0-latency free tier) Get an API key.
+*   **OpenAI:** (Alternative) Get an API key.
+
+### 2. Environment Configuration
+Copy the `.env.example` to `.env` and fill in your keys:
+```bash
+cp .env.example .env
+```
+*   `OPENAI_API_KEY`: Your Groq or OpenAI key.
+*   `RETELL_API_KEY`: Your Retell API key.
+*   `RETELL_AGENT_ID`: Your target Retell Agent ID.
+
+### 3. Local Development
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the server with reload
+python -m uvicorn main:app --reload --port 8000
+```
+
+### 4. Tunneling for Retell Webhooks
+Since Retell needs to reach your local server for the LLM WebSocket:
+```bash
+ngrok http 8000
+```
+*Set your **Custom LLM URL** in the Retell Dashboard to:*  
+`wss://[your-ngrok-url].ngrok-free.app/api/v1/retell/llm-websocket`
+
+## 📡 API Endpoints
+
+*   `POST /api/v1/interviews/join`: Provisions a fresh voice session and returns highly-secure access tokens.
+*   `POST /api/v1/retell/webhook`: Handles the `call_analyzed` event to persist transcripts and trigger AI scoring.
+*   `WS /api/v1/retell/llm-websocket`: The real-time brain of the agent handling the conversation stream.
+
+---
+Built with ⚡ by Antigravity for the next generation of recruiting.
