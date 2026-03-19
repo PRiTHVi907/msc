@@ -101,7 +101,11 @@ export function LiveAIInterviewRoom({ access_token }: { access_token: string }) 
         </div>
       )}
 
-      <div className="relative w-full max-w-4xl mx-auto aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 grid place-items-center mb-6">
+      <div
+        className={`w-full aspect-video bg-gray-950 rounded-2xl relative overflow-hidden shadow-2xl grid place-items-center mb-6 ${
+          agentSpeaking ? 'ring-2 ring-brand-accent shadow-[0_0_20px_rgba(0,210,106,0.2)] transition-all duration-500' : ''
+        }`}
+      >
         
         {/* Call Content Area */}
         <div className="flex flex-col items-center justify-center z-10 w-full h-full">
@@ -166,6 +170,11 @@ export function LiveAIInterviewRoom({ access_token }: { access_token: string }) 
             <span className="text-xs">{isCalling ? '🟢' : '🔴'}</span>
             <span>{isCalling ? 'Connected' : 'Disconnected'}</span>
           </div>
+        </div>
+
+        {/* Candidate PIP (placeholder for camera preview) */}
+        <div className="absolute bottom-6 right-6 w-48 aspect-video bg-gray-800 rounded-xl overflow-hidden border-2 border-white/20 shadow-2xl z-10 hover:scale-105 hover:border-white/50 transition-all cursor-move flex items-center justify-center text-gray-300 text-xs">
+          Camera Preview
         </div>
       </div>
 
