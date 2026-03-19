@@ -27,18 +27,21 @@ export function Dashboard() {
     return 'bg-red-100 text-red-700';
   };
 
+  const statusBadge = (s: Candidate['status']) => {
+    if (s === 'Scored') return 'bg-green-100 text-green-800';
+    if (s === 'Recorded') return 'bg-yellow-100 text-yellow-800';
+    return 'bg-blue-100 text-blue-800';
+  };
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[ { label: 'Active Roles', val: metrics.activeRoles, icon: BriefcaseIcon },
            { label: 'Pending Review', val: metrics.pendingReview, icon: Clock },
            { label: 'Completed', val: metrics.completed, icon: CheckCircle },
            { label: 'Avg AI Score', val: metrics.avgScore, icon: BarChart3 }
         ].map((m, i) => (
-          <div key={i} className="p-4 bg-gray-50 border border-[#113B5E]/20 rounded-xl flex items-center justify-between">
-            <div><p className="text-sm text-[#8792A2] font-medium">{m.label}</p><p className="text-2xl font-bold text-[#0A2540]">{m.val}</p></div>
-            <m.icon className="text-[#1D5A85]" size={24} />
-          </div>
+          <StatCard key={i} label={m.label} value={m.val} icon={m.icon} />
         ))}
       </div>
 
@@ -54,7 +57,7 @@ export function Dashboard() {
                 <tr key={c.id} className="hover:bg-gray-50 transition-colors duration-200">
                   <td className="p-4 font-medium text-[#1A1A1A]">{c.name}</td>
                   <td className="p-4 text-[#8792A2]">{c.role}</td>
-                  <td className="p-4"><span className="px-2 py-1 rounded-full text-xs font-medium bg-[#1D5A85]/10 text-[#1D5A85]">{c.status}</span></td>
+                  <td className="p-4"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge(c.status)}`}>{c.status === 'Scored' ? 'Completed' : c.status === 'Recorded' ? 'Pending' : 'Invited'}</span></td>
                   <td className="p-4"><span className={`px-2 py-1 rounded-full text-xs font-medium ${scoreColor(c.score)}`}>{c.score || 'N/A'}</span></td>
                   <td className="p-4 flex space-x-2">
                     <button className="p-1 px-3 text-sm text-white bg-[#00D26A] hover:bg-[#00A352] focus-ring rounded transition-transform hover:scale-105">Review</button>
@@ -71,3 +74,17 @@ export function Dashboard() {
 }
 
 function BriefcaseIcon(props: any) { return <UserCheck {...props} />; }
+
+function StatCard({ label, value, icon: Icon }: { label: string; value: number; icon: any }) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:-translate-y-1 hover:shadow-md transition-all duration-300 group flex items-center justify-between">
+      <div>
+        <p className="text-sm text-[#8792A2] font-medium">{label}</p>
+        <p className="text-2xl font-bold text-[#0A2540]">{value}</p>
+      </div>
+      <div className="h-11 w-11 rounded-xl bg-gray-50 text-slate-500 flex items-center justify-center group-hover:bg-blue-50 group-hover:text-brand-primary transition-colors">
+        <Icon size={22} />
+      </div>
+    </div>
+  );
+}

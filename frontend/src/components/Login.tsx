@@ -159,7 +159,7 @@ export default function Login() {
 
       {/* Right side - Login Form */}
       <div className="flex items-center justify-center p-8 bg-gray-50">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-gray-100 animate-fade-in-up">
           <div className="mb-8 md:hidden flex items-center gap-3">
             <Video className="w-8 h-8 text-blue-600" />
             <span className="text-xl font-bold text-gray-900">AI.nterview</span>
@@ -205,7 +205,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200 pl-10 pr-3"
                   placeholder="Enter your email"
                   required
                 />
@@ -222,7 +222,7 @@ export default function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200 pl-10 pr-3"
                   placeholder="••••••••"
                   required
                 />
@@ -251,7 +251,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="w-full bg-brand-primary text-white font-semibold py-3 rounded-lg hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md hover:shadow-lg flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? 'Signing in...' : 'Sign in'}
               {!loading && <ArrowRight className="w-4 h-4" />}
