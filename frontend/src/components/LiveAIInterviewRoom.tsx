@@ -13,6 +13,7 @@ const retellWebClient = new RetellWebClient();
 
 export function LiveAIInterviewRoom({ access_token }: { access_token: string }) {
   const [isCalling, setIsCalling] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [agentSpeaking, setAgentSpeaking] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -80,12 +81,14 @@ export function LiveAIInterviewRoom({ access_token }: { access_token: string }) 
         return;
       }
       try {
+        setIsConnecting(true);
         await retellWebClient.startCall({
           accessToken: access_token,
         });
       } catch (err) {
         console.error('Failed to start call:', err);
         setError('Failed to connect to the agent.');
+        setIsConnecting(false);
       }
     }
   };
@@ -98,13 +101,13 @@ export function LiveAIInterviewRoom({ access_token }: { access_token: string }) 
         </div>
       )}
 
-      <div className="w-full bg-[#1A1A1A] rounded-2xl overflow-hidden aspect-video shadow-xl relative grid place-items-center mb-6">
+      <div className="relative w-full max-w-4xl mx-auto aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 grid place-items-center mb-6">
         
         {/* Call Content Area */}
         <div className="flex flex-col items-center justify-center z-10 w-full h-full">
 
           {/* Avatar / Visuals */}
-          <div className="relative mb-8 mt-4">
+          <div className="relative mb-8 mt-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
             <div className={`w-32 h-32 rounded-full border-4 shadow-xl flex items-center justify-center transition-all duration-300 ${
               isCalling 
                 ? (agentSpeaking ? 'border-[#00D26A] bg-[#00D26A]/10 scale-105 shadow-[0_0_30px_rgba(0,210,106,0.3)]' : 'border-[#1D5A85] bg-[#1D5A85]/10') 
@@ -130,22 +133,38 @@ export function LiveAIInterviewRoom({ access_token }: { access_token: string }) 
           {/* Main Controls */}
           <button
             onClick={toggleConversation}
-            className={`px-8 py-4 rounded-full font-bold text-lg shadow-xl hover:scale-105 transition-all outline-none ${
+            disabled={isConnecting}
+            className={`mt-8 px-8 py-4 rounded-full font-bold text-lg transition-all shadow-lg outline-none ${
               isCalling
                 ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20'
-                : 'bg-white hover:bg-gray-100 text-[#0A2540] shadow-white/10'
-            }`}
+                : 'bg-white text-gray-900 hover:scale-105 active:scale-95 animate-pulse-glow'
+            } ${isConnecting ? 'opacity-80 cursor-not-allowed hover:scale-100 active:scale-100' : ''}`}
           >
-            {isCalling ? 'End Interview' : 'Connect / Start Interview'}
+            {isCalling ? (
+              'End Interview'
+            ) : isConnecting ? (
+              <span className="flex items-center gap-3">
+                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
+                </svg>
+                <span className="transition-opacity duration-200">Establishing Secure Connection...</span>
+              </span>
+            ) : (
+              'Connect / Start Interview'
+            )}
           </button>
         </div>
 
         {/* Status Indicators overlay */}
         <div className="absolute top-4 left-4 flex gap-3 z-20">
-          <div className={`px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
-            isCalling ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-          }`}>
-            {isCalling ? '🟢 Connected' : '🔴 Disconnected'}
+          <div
+            className={`absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white text-sm font-medium ${
+              isConnecting && !isCalling ? 'animate-pulse' : ''
+            }`}
+          >
+            <span className="text-xs">{isCalling ? '🟢' : '🔴'}</span>
+            <span>{isCalling ? 'Connected' : 'Disconnected'}</span>
           </div>
         </div>
       </div>
