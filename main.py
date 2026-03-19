@@ -6,7 +6,9 @@ from app.api.interviews import router as interviews_router
 from app.api.auth import router as auth_router
 from app.api.jobs import router as jobs_router
 from app.api.webhooks import router as webhooks_router
+logging.error("DEBUG: Importing retell_llm...")
 from app.api.retell_llm import router as retell_llm_router
+logging.error("DEBUG: retell_llm imported")
 from app.core.database import engine
 
 from fastapi.middleware.cors import CORSMiddleware
