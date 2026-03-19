@@ -57,5 +57,3 @@ ngrok http 8000
 *   `POST /api/v1/retell/webhook`: Handles the `call_analyzed` event to persist transcripts and trigger AI scoring.
 *   `WS /api/v1/retell/llm-websocket`: The real-time brain of the agent handling the conversation stream.
 
----
-Built with ⚡ by Antigravity for the next generation of recruiting.
