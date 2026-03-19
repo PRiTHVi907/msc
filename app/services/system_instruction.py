@@ -1,26 +1,33 @@
-SAMPLE_CV = """
+MARKETING_CV = """
 # Alex Mercer - Candidate for Head of Marketing
-**Location:** San Francisco, CA | **Experience:** 12+ Years in B2B SaaS Marketing
-
-**Summary:** > Data-driven marketing executive specializing in scaling B2B SaaS platforms from Series A to acquisition. Expert in building revenue-focused marketing engines, driving down CAC by 40%, and leading high-performing teams of 15+ across Growth, Product Marketing, and Brand.
-
-**Professional Experience:**
-**VP of Marketing | CloudFlow Analytics (2021 - Present)**
-* Scaled ARR from $5M to $22M in 24 months through a revamped enterprise Account-Based Marketing (ABM) strategy.
-* Reduced Customer Acquisition Cost (CAC) by 35% by shifting budget from paid search to high-intent organic content and strategic webinars.
-* Built and managed a $3M annual marketing budget, consistently delivering a 4.5x pipeline ROI.
-
-**Director of Growth Marketing | DataSync (2017 - 2021)**
-* Led a team of 8 growth marketers, launching the company's first self-serve PLG (Product-Led Growth) motion.
-* Increased inbound MQLs by 150% year-over-year.
-
-**Core Competencies:**
-Go-to-Market Strategy, PLG & Sales-Led Motion, Marketing Ops (HubSpot/Salesforce), Brand Positioning, Team Leadership & Mentorship.
+**Experience:** 12+ Years in B2B SaaS Marketing
+Scaled ARR from $5M to $22M. Reduced CAC by 35%. Expert in ABM and PLG motions.
 """
 
-def build_recruiter_prompt(candidate_cv: str = SAMPLE_CV) -> str:
-    return f"""You are a tough, elite executive recruiter hiring a Head of Marketing for a fast-growing B2B SaaS startup. Do not act like an AI assistant. You must ask 5 highly strategic questions based on the candidate's CV provided below. Focus heavily on Go-To-Market (GTM) strategy, Customer Acquisition Cost (CAC) reduction, and team leadership. Ask ONE question at a time. Wait for the candidate's response. Probe deeply if their answer lacks measurable metrics.
+PYTHON_BEGINNER_CV = """
+# Jordan Lee - Junior Python Developer
+**Experience:** 1 Year (Self-taught & Internship)
+Built personal projects: A task manager CLI, a simple weather scraper, and a basic blog using Flask.
+Proficient in: Python basics (list comprehension, loops, dicts), Basic Git.
+"""
 
-Candidate CV:
-{candidate_cv}
+def build_recruiter_prompt(job_title: str = "Head of Marketing", candidate_name: str = "Candidate") -> str:
+    cv = MARKETING_CV if "marketing" in job_title.lower() else PYTHON_BEGINNER_CV
+    
+    if "python" in job_title.lower():
+        role_focus = "Check their understanding of very simple algorithms (loops, sorting basics, fizz-buzz logic) and core Python syntax."
+        persona = "You are a friendly but focused technical mentor interviewing a beginner for their first internship."
+    else:
+        role_focus = "Focus heavily on Go-To-Market (GTM) strategy, Customer Acquisition Cost (CAC) reduction, and team leadership."
+        persona = "You are a tough, elite executive recruiter hiring for a fast-growing B2B SaaS startup."
+
+    return f"""{persona}
+Do not act like an AI assistant. You must ask 5 strategic questions targeted at the {job_title} role.
+{role_focus}
+
+Ask ONE question at a time. Wait for the candidate's response before proceeding.
+Be encouraging but ensure they follow logical reasoning even for simple tasks.
+
+Candidate Profile:
+{cv}
 """

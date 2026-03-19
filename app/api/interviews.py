@@ -4,8 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+import logging
+from app.core.config import settings
 from uuid import UUID
 from sqlalchemy import func
+
+logger = logging.getLogger(__name__)
+
 from app.core.database import get_db
 from app.models.models import Interview, InterviewStatus
 from app.schemas.schemas import JoinResponse
@@ -65,7 +70,7 @@ async def join_interview(interview_id: UUID, db: AsyncSession = Depends(get_db),
         
         try:
             from app.services.retell_service import retell_service
-            print(f"[JOIN] Creating fresh Retell call for interview {interview_id}...")
+            logger.info(f"Provisioning fresh Retell call for interview {interview_id}...")
             call_info = retell_service.create_web_call(
                 interview_id=str(interview_id),
                 candidate_name=candidate_name,
@@ -74,10 +79,10 @@ async def join_interview(interview_id: UUID, db: AsyncSession = Depends(get_db),
             )
             interview.retell_call_id = call_info["call_id"]
             access_token = call_info["access_token"]
-            print(f"[JOIN] Got access_token: {access_token[:20]}... call_id: {interview.retell_call_id}")
+            logger.info(f"Join success. Token: {access_token[:10]}...")
         except Exception as e:
-            print(f"[RETELL API ERROR] Unexpected error during provisioning: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Internal provisioning error: {str(e)}")
+            logger.error(f"Retell provisioning error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Internal provisioning error")
             
         interview.status = InterviewStatus.in_progress
         await db.commit()

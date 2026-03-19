@@ -1,7 +1,10 @@
 import asyncio
+import logging
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.models.models import Interview, Transcript, InterviewStatus
@@ -77,7 +80,7 @@ async def calculate_ai_score(interview_id, db: AsyncSession | None = None) -> in
         return score
 
     except Exception as e:
-        print(f"Scoring error: {e}")
+        logger.error(f"Scoring engine error: {e}")
         if own_session:
             await db.rollback()
         return None

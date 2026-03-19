@@ -9,22 +9,31 @@ logger = logging.getLogger(__name__)
 
 @router.websocket("/llm-websocket/{call_id}")
 async def llm_websocket(websocket: WebSocket, call_id: str):
-    print(f"[WEBSOCKET] Retell connected! Call ID: {call_id}")
+    logger.info(f"Retell connected. Call: {call_id}")
     await websocket.accept()
+    
+    # Track state for the session
+    job_title = "Candidate"
+    candidate_name = "AI Intern"
     
     try:
         while True:
             data = await websocket.receive_text()
             event = json.loads(data)
             interaction_type = event.get("interaction_type")
-            print(f"[EVENT] Received interaction_type: {interaction_type}")
             
             if interaction_type == "config":
-                # Immediately fire off a greeting
-                print("[GREETING] Forcing initial agent greeting...")
+                # Extract dynamic variables from Retell
+                config_vars = event.get("retell_llm_dynamic_variables", {})
+                job_title = config_vars.get("job_title", "Software Engineer")
+                candidate_name = config_vars.get("candidate_name", "Candidate")
+                
+                logger.debug(f"Configured for {candidate_name} as {job_title}")
+                
+                # Initial greeting
                 await websocket.send_json({
                     "response_id": 0,
-                    "content": "Hello! I am your executive recruiter. I've reviewed your background for the Head of Marketing role. Shall we begin the interview?",
+                    "content": f"Hello {candidate_name}! I'm looking forward to our interview for the {job_title} position. Shall we start?",
                     "content_complete": True
                 })
                 continue
@@ -36,9 +45,8 @@ async def llm_websocket(websocket: WebSocket, call_id: str):
                 response_id = event.get("response_id")
                 transcript = event.get("transcript", [])
                 
-                # Use our strategic executive recruiter prompt
                 messages = [
-                    {"role": "system", "content": build_recruiter_prompt(SAMPLE_CV)}
+                    {"role": "system", "content": build_recruiter_prompt(job_title, candidate_name)}
                 ]
                 
                 for turn in transcript:
