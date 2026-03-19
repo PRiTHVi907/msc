@@ -1,8 +1,0 @@
-Using interview ID: 15cb163814774572a7e31e3ab6ac2983
-Connected
-Received: {"type":"question","id":1,"is_followup":false}
-Received: {"type":"transcript","speaker":"ai","text":"Hello! I am your AI Interviewer. How are you today? I am fully mocked without an API key."}
-Received: {"type":"question","id":2,"is_followup":false}
-Received: {"type":"transcript","speaker":"ai","text":"Can you tell me about your experience with React?"}
-Received: {"type":"question","id":3,"is_followup":false}
-Received: {"type":"transcript","speaker":"ai","text":"That sounds great. Let's move on to the next topic."}
