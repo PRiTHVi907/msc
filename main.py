@@ -6,10 +6,8 @@ from app.api.interviews import router as interviews_router
 from app.api.auth import router as auth_router
 from app.api.jobs import router as jobs_router
 from app.api.webhooks import router as webhooks_router
-logging.error("DEBUG: Importing retell_llm...")
 from app.api.retell_llm import router as retell_llm_router
-logging.error("DEBUG: retell_llm imported")
-from app.core.database import engine
+from app.core.database import engine, Base
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -37,8 +35,6 @@ app.include_router(auth_router)
 app.include_router(jobs_router)
 app.include_router(webhooks_router)
 app.include_router(retell_llm_router, prefix="/api/v1/retell", tags=["Retell"])
-
-from app.core.database import engine, Base
 
 @app.on_event("startup")
 async def startup():

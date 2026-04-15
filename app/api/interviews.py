@@ -1,20 +1,15 @@
-import asyncio
-import uuid as _uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 import logging
-from app.core.config import settings
 from uuid import UUID
-from sqlalchemy import func
 
 logger = logging.getLogger(__name__)
 
 from app.core.database import get_db
 from app.models.models import Interview, InterviewStatus
 from app.schemas.schemas import JoinResponse
-from app.services.scoring import calculate_ai_score
 from app.core.auth import verify_jwt
 from app.core.limiter import join_limiter
 

@@ -4,14 +4,12 @@ import logging
 from app.core.llm import client as openai_client
 from app.services.system_instruction import build_recruiter_prompt
 
-print("DEBUG: Loading retell_llm module...")
 router = APIRouter()
-print("DEBUG: Router initialized in retell_llm")
 logger = logging.getLogger(__name__)
 
 @router.websocket("/llm-websocket/{call_id}")
 async def llm_websocket(websocket: WebSocket, call_id: str):
-    print(f"DEBUG: Retell websocket upgrade for call: {call_id}")
+    logger.info(f"Retell websocket upgrade for call: {call_id}")
     await websocket.accept()
     
     # Track state for the session
@@ -30,8 +28,6 @@ async def llm_websocket(websocket: WebSocket, call_id: str):
                     config_vars = event.get("retell_llm_dynamic_variables", {})
                     job_title = config_vars.get("job_title", "Software Engineer")
                     candidate_name = config_vars.get("candidate_name", "Candidate")
-                    
-                    print(f"DEBUG: Configured for {candidate_name} as {job_title}")
                     
                     # Initial greeting
                     await websocket.send_json({
@@ -76,9 +72,9 @@ async def llm_websocket(websocket: WebSocket, call_id: str):
                 logger.error(f"Inner loop error: {e}")
                 break
     except WebSocketDisconnect:
-        print(f"DEBUG: Retell WebSocket disconnected")
+        logger.info(f"Retell WebSocket disconnected for call: {call_id}")
     except Exception as e:
-        print(f"DEBUG: WebSocket outer exception: {e}")
+        logger.error(f"WebSocket outer exception for call {call_id}: {e}")
     finally:
         try:
             await websocket.close()
